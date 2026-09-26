@@ -1,0 +1,97 @@
+# syntax=docker/dockerfile:1
+
+# -------------------------------------------------------------
+# Stage 1: Build Frontend Assets (Vite & Tailwind CSS)
+# -------------------------------------------------------------
+FROM node:20-alpine AS node_builder
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm ci
+
+COPY resources/ ./resources/
+COPY public/ ./public/
+COPY vite.config.js postcss.config.js tailwind.config.js ./
+
+RUN npm run build
+
+# -------------------------------------------------------------
+# Stage 2: Install Composer Dependencies
+# -------------------------------------------------------------
+FROM composer:2 AS composer_builder
+WORKDIR /app
+
+COPY composer.json composer.lock ./
+RUN composer install \
+    --no-dev \
+    --no-interaction \
+    --no-scripts \
+    --no-autoloader \
+    --prefer-dist \
+    --ignore-platform-reqs
+
+COPY . ./
+RUN composer dump-autoload --optimize --no-dev --no-interaction
+
+# -------------------------------------------------------------
+# Stage 3: Production PHP-FPM Runtime
+# -------------------------------------------------------------
+FROM php:8.2-fpm-alpine AS runner
+WORKDIR /var/www/html
+
+# Install system dependencies
+RUN apk add --no-cache \
+    curl \
+    git \
+    libpng-dev \
+    libjpeg-turbo-dev \
+    freetype-dev \
+    libxml2-dev \
+    libzip-dev \
+    oniguruma-dev \
+    icu-dev \
+    netcat-openbsd \
+    su-exec \
+    tzdata \
+    bash
+
+# Configure & install PHP extensions
+RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install -j$(nproc) \
+        pdo \
+        pdo_mysql \
+        pdo_sqlite \
+        bcmath \
+        gd \
+        zip \
+        intl \
+        opcache \
+        pcntl \
+        exif \
+        mbstring
+
+# Copy PHP and OPcache configuration
+COPY docker/php/php.ini /usr/local/etc/php/conf.d/custom.ini
+COPY docker/php/opcache.ini /usr/local/etc/php/conf.d/opcache.ini
+
+# Copy application files
+COPY . /var/www/html
+
+# Copy pre-built vendor from stage 2
+COPY --from=composer_builder /app/vendor /var/www/html/vendor
+
+# Copy compiled frontend assets from stage 1
+COPY --from=node_builder /app/public/build /var/www/html/public/build
+
+# Setup entrypoint script
+COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
+# Fix directory permissions for Laravel storage and cache
+RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache \
+    && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
+
+EXPOSE 9000
+
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+CMD ["php-fpm"]
