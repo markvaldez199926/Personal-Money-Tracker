@@ -43,6 +43,8 @@ WORKDIR /var/www/html
 RUN apk add --no-cache \
     curl \
     git \
+    nginx \
+    supervisor \
     libpng-dev \
     libjpeg-turbo-dev \
     freetype-dev \
@@ -51,6 +53,7 @@ RUN apk add --no-cache \
     oniguruma-dev \
     icu-dev \
     netcat-openbsd \
+    postgresql-dev \
     su-exec \
     tzdata \
     bash
@@ -60,6 +63,7 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install -j$(nproc) \
         pdo \
         pdo_mysql \
+        pdo_pgsql \
         pdo_sqlite \
         bcmath \
         gd \
@@ -70,9 +74,11 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
         exif \
         mbstring
 
-# Copy PHP and OPcache configuration
+# Copy PHP, OPcache, Nginx, and Supervisord configuration
 COPY docker/php/php.ini /usr/local/etc/php/conf.d/custom.ini
 COPY docker/php/opcache.ini /usr/local/etc/php/conf.d/opcache.ini
+COPY docker/nginx/default.conf /etc/nginx/conf.d/default.conf
+COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
 # Copy application files
 COPY . /var/www/html
@@ -91,7 +97,7 @@ RUN chmod +x /usr/local/bin/entrypoint.sh
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache \
     && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 
-EXPOSE 9000
+EXPOSE 80 9000
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
-CMD ["php-fpm"]
+CMD ["supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
