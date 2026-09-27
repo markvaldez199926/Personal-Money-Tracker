@@ -50,6 +50,15 @@ chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 # Create storage symlink
 php artisan storage:link --force || true
 
+# Generate application key if missing
+if [ -z "$APP_KEY" ]; then
+    echo "Generating application encryption key..."
+    php artisan key:generate --force || true
+fi
+
+# Discover packages
+php artisan package:discover --ansi || true
+
 # Run database migrations
 echo "Running database migrations..."
 php artisan migrate --force || true
@@ -58,10 +67,14 @@ php artisan migrate --force || true
 mkdir -p /run/nginx /var/log/supervisor /var/log/nginx
 
 # Dynamic PORT configuration for cloud providers (Render, Fly.io, Railway, Cloud Run)
-if [ -n "$PORT" ] && [ -f /etc/nginx/conf.d/default.conf ]; then
+if [ -n "$PORT" ]; then
     echo "Configuring Nginx to listen on port $PORT..."
-    sed -i "s/listen 80;/listen $PORT;/g" /etc/nginx/conf.d/default.conf
-    sed -i "s/listen \[::\]:80;/listen [::]:$PORT;/g" /etc/nginx/conf.d/default.conf
+    for conf in /etc/nginx/http.d/default.conf /etc/nginx/conf.d/default.conf; do
+        if [ -f "$conf" ]; then
+            sed -i "s/listen 80;/listen $PORT;/g" "$conf"
+            sed -i "s/listen \[::\]:80;/listen [::]:$PORT;/g" "$conf"
+        fi
+    done
 fi
 
 echo "Starting container command: $@"

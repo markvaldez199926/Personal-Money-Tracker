@@ -31,7 +31,7 @@ RUN composer install \
     --ignore-platform-reqs
 
 COPY . ./
-RUN composer dump-autoload --optimize --no-dev --no-interaction
+RUN composer dump-autoload --optimize --no-dev --no-interaction --no-scripts
 
 # -------------------------------------------------------------
 # Stage 3: Production PHP-FPM Runtime
@@ -77,6 +77,11 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
 # Copy PHP, OPcache, Nginx, and Supervisord configuration
 COPY docker/php/php.ini /usr/local/etc/php/conf.d/custom.ini
 COPY docker/php/opcache.ini /usr/local/etc/php/conf.d/opcache.ini
+
+# Ensure Nginx config is placed in both http.d (Alpine default) and conf.d
+RUN mkdir -p /etc/nginx/http.d /etc/nginx/conf.d \
+    && rm -rf /etc/nginx/http.d/* /etc/nginx/conf.d/*
+COPY docker/nginx/default.conf /etc/nginx/http.d/default.conf
 COPY docker/nginx/default.conf /etc/nginx/conf.d/default.conf
 COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
@@ -88,6 +93,9 @@ COPY --from=composer_builder /app/vendor /var/www/html/vendor
 
 # Copy compiled frontend assets from stage 1
 COPY --from=node_builder /app/public/build /var/www/html/public/build
+
+# Run package discovery with all PHP extensions loaded
+RUN php artisan package:discover --ansi || true
 
 # Setup entrypoint script
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
