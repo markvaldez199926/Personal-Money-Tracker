@@ -39,29 +39,21 @@ RUN composer dump-autoload --optimize --no-dev --no-interaction --no-scripts
 FROM php:8.2-fpm-alpine AS runner
 WORKDIR /var/www/html
 
-# Install system dependencies
+# Install system utilities, web server, and supervisor
 RUN apk add --no-cache \
     curl \
     git \
     nginx \
     supervisor \
-    libpng-dev \
-    libjpeg-turbo-dev \
-    freetype-dev \
-    libxml2-dev \
-    libzip-dev \
-    oniguruma-dev \
-    icu-dev \
     netcat-openbsd \
-    postgresql-dev \
     su-exec \
     tzdata \
     bash
 
-# Configure & install PHP extensions
-RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install -j$(nproc) \
-        pdo \
+# Install PHP extensions using the official extension installer
+ADD https://github.com/mlocati/docker-php-extension-installer/releases/latest/download/install-php-extensions /usr/local/bin/
+RUN chmod +x /usr/local/bin/install-php-extensions && \
+    install-php-extensions \
         pdo_mysql \
         pdo_pgsql \
         pdo_sqlite \
@@ -71,8 +63,7 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
         intl \
         opcache \
         pcntl \
-        exif \
-        mbstring
+        exif
 
 # Copy PHP, OPcache, Nginx, and Supervisord configuration
 COPY docker/php/php.ini /usr/local/etc/php/conf.d/custom.ini
