@@ -12,6 +12,10 @@ services:
         value: production
       - key: APP_DEBUG
         value: "false"
+      - key: APP_URL
+        value: https://personal-money-tracker.onrender.com
+      - key: ASSET_URL
+        value: https://personal-money-tracker.onrender.com
       - key: APP_KEY
         value: "base64:GIFEgoZLGxxtXdDdxMo/RqdhDid9fpLH0au6aPrT+yw="
       - key: DB_CONNECTION
