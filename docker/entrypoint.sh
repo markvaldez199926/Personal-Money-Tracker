@@ -67,14 +67,10 @@ php artisan migrate --force || true
 mkdir -p /run/nginx /var/log/supervisor /var/log/nginx
 
 # Dynamic PORT configuration for cloud providers (Render, Fly.io, Railway, Cloud Run)
-if [ -n "$PORT" ]; then
+if [ -n "$PORT" ] && [ -f /etc/nginx/http.d/default.conf ]; then
     echo "Configuring Nginx to listen on port $PORT..."
-    for conf in /etc/nginx/http.d/default.conf /etc/nginx/conf.d/default.conf; do
-        if [ -f "$conf" ]; then
-            sed -i "s/listen 80;/listen $PORT;/g" "$conf"
-            sed -i "s/listen \[::\]:80;/listen [::]:$PORT;/g" "$conf"
-        fi
-    done
+    sed -i "s/listen 80;/listen $PORT;/g" /etc/nginx/http.d/default.conf
+    sed -i "s/listen \[::\]:80;/listen [::]:$PORT;/g" /etc/nginx/http.d/default.conf
 fi
 
 echo "Starting container command: $@"

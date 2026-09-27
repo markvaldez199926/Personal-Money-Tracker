@@ -69,11 +69,11 @@ RUN chmod +x /usr/local/bin/install-php-extensions && \
 COPY docker/php/php.ini /usr/local/etc/php/conf.d/custom.ini
 COPY docker/php/opcache.ini /usr/local/etc/php/conf.d/opcache.ini
 
-# Ensure Nginx config is placed in both http.d (Alpine default) and conf.d
-RUN mkdir -p /etc/nginx/http.d /etc/nginx/conf.d \
+# Ensure clean Nginx directories and copy master nginx.conf and site default.conf
+RUN mkdir -p /etc/nginx/http.d /run/nginx /var/log/nginx \
     && rm -rf /etc/nginx/http.d/* /etc/nginx/conf.d/*
+COPY docker/nginx/nginx.conf /etc/nginx/nginx.conf
 COPY docker/nginx/default.conf /etc/nginx/http.d/default.conf
-COPY docker/nginx/default.conf /etc/nginx/conf.d/default.conf
 COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
 # Copy application files
