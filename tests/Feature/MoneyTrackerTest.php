@@ -4,6 +4,8 @@ use App\Models\Category;
 use App\Models\User;
 use App\Models\Wallet;
 use App\Services\TransactionService;
+use Livewire\Livewire;
+use Livewire\Volt\Volt;
 
 beforeEach(function () {
     $this->user = User::factory()->create([
@@ -109,4 +111,42 @@ test('transaction service creates transfer between two wallets atomically', func
 
     expect($this->wallet->fresh()->balance)->toEqual(900.00);
     expect($targetWallet->fresh()->balance)->toEqual(150.00);
+});
+
+test('user can switch currency between peso and dollar with correct formatting', function () {
+    expect($this->user->formatMoney(1500))->toBe('$1,500.00');
+
+    // Switch to Philippine Peso
+    $success = $this->user->setCurrency('PHP');
+    expect($success)->toBeTrue();
+    expect($this->user->currency)->toBe('PHP');
+    expect($this->user->currency_symbol)->toBe('₱');
+    expect($this->user->formatMoney(1500))->toBe('₱1,500.00');
+
+    // Switch back to US Dollar
+    $success = $this->user->setCurrency('USD');
+    expect($success)->toBeTrue();
+    expect($this->user->currency)->toBe('USD');
+    expect($this->user->currency_symbol)->toBe('$');
+    expect($this->user->formatMoney(1500))->toBe('$1,500.00');
+});
+
+test('currency update form in profile updates user preference', function () {
+    $this->actingAs($this->user);
+
+    Volt::test('profile.update-currency-form')
+        ->set('currency', 'PHP')
+        ->call('updateCurrency')
+        ->assertDispatched('currency-changed');
+
+    expect($this->user->fresh()->currency)->toBe('PHP');
+    expect($this->user->fresh()->currency_symbol)->toBe('₱');
+
+    Volt::test('profile.update-currency-form')
+        ->set('currency', 'USD')
+        ->call('updateCurrency')
+        ->assertDispatched('currency-changed');
+
+    expect($this->user->fresh()->currency)->toBe('USD');
+    expect($this->user->fresh()->currency_symbol)->toBe('$');
 });

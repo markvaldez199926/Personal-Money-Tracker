@@ -16,8 +16,13 @@ new #[Layout('layouts.guest')] class extends Component
     public string $email = '';
     public string $password = '';
     public string $password_confirmation = '';
-    public string $currency = 'USD';
-    public string $currency_symbol = '$';
+    public string $currency = 'PHP';
+    public string $currency_symbol = '₱';
+
+    public function updatedCurrency(string $value): void
+    {
+        $this->currency_symbol = User::SUPPORTED_CURRENCIES[$value]['symbol'] ?? '₱';
+    }
 
     /**
      * Handle an incoming registration request.
@@ -29,6 +34,8 @@ new #[Layout('layouts.guest')] class extends Component
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
             'password' => ['required', 'string', 'confirmed', Rules\Password::defaults()],
         ]);
+
+        $this->currency_symbol = User::SUPPORTED_CURRENCIES[$this->currency]['symbol'] ?? '₱';
 
         $user = User::create([
             'name' => $this->name,
@@ -270,6 +277,31 @@ new #[Layout('layouts.guest')] class extends Component
                         />
                     </div>
                     <x-input-error :messages="$errors->get('password_confirmation')" class="mt-1.5" />
+                </div>
+
+                <!-- Preferred Currency -->
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                        Preferred Currency
+                    </label>
+                    <div class="grid grid-cols-2 gap-2.5">
+                        <label class="relative flex items-center gap-2 p-2.5 rounded-xl border cursor-pointer transition {{ $currency === 'PHP' ? 'border-indigo-600 bg-indigo-50/60 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 font-bold shadow-sm' : 'border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-750' }}">
+                            <input type="radio" wire:model.live="currency" value="PHP" class="sr-only">
+                            <span class="text-xl">🇵🇭</span>
+                            <div class="text-xs">
+                                <div>PHP (₱)</div>
+                                <div class="text-[10px] text-gray-500 dark:text-gray-400 font-normal">Philippine Peso</div>
+                            </div>
+                        </label>
+                        <label class="relative flex items-center gap-2 p-2.5 rounded-xl border cursor-pointer transition {{ $currency === 'USD' ? 'border-indigo-600 bg-indigo-50/60 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 font-bold shadow-sm' : 'border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-750' }}">
+                            <input type="radio" wire:model.live="currency" value="USD" class="sr-only">
+                            <span class="text-xl">🇺🇸</span>
+                            <div class="text-xs">
+                                <div>USD ($)</div>
+                                <div class="text-[10px] text-gray-500 dark:text-gray-400 font-normal">US Dollar</div>
+                            </div>
+                        </label>
+                    </div>
                 </div>
 
                 <!-- Submit Button -->
