@@ -1,5 +1,6 @@
 <?php
 
+use App\Livewire\CategoriesManager;
 use App\Models\Category;
 use App\Models\User;
 use App\Models\Wallet;
@@ -150,3 +151,69 @@ test('currency update form in profile updates user preference', function () {
     expect($this->user->fresh()->currency)->toBe('USD');
     expect($this->user->fresh()->currency_symbol)->toBe('$');
 });
+
+test('categories page can be rendered for authenticated user', function () {
+    $response = $this->actingAs($this->user)->get(route('categories'));
+    $response->assertOk();
+    $response->assertSee('Categories & Data', false);
+    $response->assertSee('Groceries');
+});
+
+test('user can create a custom category and add data inside it', function () {
+    $this->actingAs($this->user);
+
+    Livewire::test(CategoriesManager::class)
+        ->set('name', 'Gym & Fitness')
+        ->set('type', 'expense')
+        ->set('icon', 'heart-pulse')
+        ->set('color_hex', '#ef4444')
+        ->call('saveCategory')
+        ->assertDispatched('notify');
+
+    $category = Category::where('user_id', $this->user->id)
+        ->where('name', 'Gym & Fitness')
+        ->first();
+
+    expect($category)->not->toBeNull();
+    expect($category->type)->toBe('expense');
+    expect($category->color_hex)->toBe('#ef4444');
+
+    // Add a transaction inside this category
+    $service = app(TransactionService::class);
+    $service->create($this->user, [
+        'type' => 'expense',
+        'wallet_id' => $this->wallet->id,
+        'category_id' => $category->id,
+        'amount' => 65.00,
+        'transaction_date' => now()->toDateString(),
+        'payee_merchant' => 'Gold Fitness Club',
+    ]);
+
+    // Test CategoriesManager displays data inside the category
+    Livewire::test(CategoriesManager::class)
+        ->call('viewData', $category->id)
+        ->assertSet('viewingCategoryId', $category->id)
+        ->assertSet('showDataModal', true)
+        ->assertSee('Gold Fitness Club')
+        ->assertSee('Gym & Fitness');
+});
+
+test('user can delete a custom category that has no transactions', function () {
+    $this->actingAs($this->user);
+
+    $category = Category::create([
+        'user_id' => $this->user->id,
+        'name' => 'Temporary Hobby',
+        'type' => 'expense',
+        'icon' => 'tag',
+        'color_hex' => '#8b5cf6',
+        'is_default' => false,
+    ]);
+
+    Livewire::test(CategoriesManager::class)
+        ->call('deleteCategory', $category->id)
+        ->assertDispatched('notify');
+
+    expect(Category::find($category->id))->toBeNull();
+});
+

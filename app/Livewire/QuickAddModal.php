@@ -60,7 +60,7 @@ class QuickAddModal extends Component
     }
 
     #[On('open-quick-add')]
-    public function openModal(?string $type = null): void
+    public function openModal(?string $type = null, ?int $categoryId = null): void
     {
         $this->resetValidation();
         if ($type && in_array($type, ['expense', 'income', 'transfer'])) {
@@ -68,7 +68,11 @@ class QuickAddModal extends Component
         }
         $this->transaction_date = Carbon::today()->toDateString();
         $this->setDefaultWallet();
-        $this->setDefaultCategory();
+        if ($categoryId) {
+            $this->category_id = $categoryId;
+        } else {
+            $this->setDefaultCategory();
+        }
         $this->isOpen = true;
     }
 

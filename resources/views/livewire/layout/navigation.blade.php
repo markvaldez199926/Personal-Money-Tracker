@@ -57,6 +57,9 @@ new class extends Component
                     <x-nav-link :href="route('wallets')" :active="request()->routeIs('wallets')" wire:navigate class="text-xs font-semibold px-3">
                         {{ __('Wallets') }}
                     </x-nav-link>
+                    <x-nav-link :href="route('categories')" :active="request()->routeIs('categories')" wire:navigate class="text-xs font-semibold px-3">
+                        {{ __('Categories') }}
+                    </x-nav-link>
                     <x-nav-link :href="route('budgets')" :active="request()->routeIs('budgets')" wire:navigate class="text-xs font-semibold px-3">
                         {{ __('Budgets') }}
                     </x-nav-link>
@@ -191,6 +194,9 @@ new class extends Component
             </x-responsive-nav-link>
             <x-responsive-nav-link :href="route('wallets')" :active="request()->routeIs('wallets')" wire:navigate>
                 {{ __('Wallets') }}
+            </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('categories')" :active="request()->routeIs('categories')" wire:navigate>
+                {{ __('Categories') }}
             </x-responsive-nav-link>
             <x-responsive-nav-link :href="route('budgets')" :active="request()->routeIs('budgets')" wire:navigate>
                 {{ __('Budgets') }}

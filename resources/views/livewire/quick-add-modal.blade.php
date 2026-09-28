@@ -115,7 +115,10 @@
                                 </div>
                             @else
                                 <div>
-                                    <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Category</label>
+                                    <div class="flex items-center justify-between mb-1">
+                                        <label class="block text-xs font-medium text-gray-700 dark:text-gray-300">Category</label>
+                                        <a href="{{ route('categories') }}" wire:navigate class="text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 hover:underline">Manage &rarr;</a>
+                                    </div>
                                     <select
                                         wire:model="category_id"
                                         class="block w-full rounded-lg border-gray-300 dark:border-gray-600 py-2 px-3 text-sm text-gray-900 dark:text-white dark:bg-gray-700/60 focus:border-indigo-500 focus:ring-indigo-500"

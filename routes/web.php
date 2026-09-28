@@ -8,6 +8,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::view('dashboard', 'dashboard')->name('dashboard');
     Route::view('transactions', 'transactions')->name('transactions');
     Route::view('wallets', 'wallets')->name('wallets');
+    Route::view('categories', 'categories')->name('categories');
     Route::view('budgets', 'budgets')->name('budgets');
     Route::view('recurring', 'recurring')->name('recurring');
     Route::view('analytics', 'analytics')->name('analytics');
